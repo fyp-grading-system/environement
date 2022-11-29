@@ -1,0 +1,51 @@
+version: '3.8'
+services:
+  passport-db:
+    image: docker.io/bitnami/postgresql:latest
+    container_name: passport-db
+    environment:
+      - POSTGRESQL_USERNAME=admin
+      - POSTGRESQL_PASSWORD=admin
+      - POSTGRESQL_DATABASE=keycloak
+    volumes:
+      - 'passport_data:/bitnami/postgresql'
+  passport:
+    container_name: passport
+    image: docker.io/bitnami/keycloak:latest
+    ports:
+      - "8900:8080"
+    environment:
+      - KEYCLOAK_CREATE_ADMIN_USER=true
+      - KEYCLOAK_ADMIN_USER=admin
+      - KEYCLOAK_ADMIN_PASSWORD=admin
+      - KEYCLOAK_DATABASE_HOST=passport-db
+      - KEYCLOAK_DATABASE_NAME=keycloak
+      - KEYCLOAK_DATABASE_USER=admin
+      - KEYCLOAK_DATABASE_PASSWORD=admin
+      - KEYCLOAK_EXTRA_ARGS="-Dkeycloak.import=/config/fyp-export.json"
+    volumes:
+      - '../imports/fyp-export.json:/config/fyp-export.json'
+    depends_on:
+      - passport-db
+  rabbitmq:
+    image: rabbitmq:management
+    ports:
+      - "5672:5672"
+      - "15672:15672"
+  mailhog:
+    image: mailhog/mailhog
+    logging:
+      driver: 'none' # disable saving logs
+    ports:
+      - 1025:1025 # smtp server
+      - 8025:8025 # web ui
+  mongo-db:
+    image: mongo:latest
+    container_name: mongo-db
+    environment:
+      - MONGO_INITDB_ROOT_USERNAME=admin
+      - MONGO_INITDB_ROOT_PASSWORD=admin
+
+volumes:
+  passport_data:
+    driver: local
